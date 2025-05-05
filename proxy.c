@@ -6,6 +6,7 @@
 #define MAX_OBJECT_SIZE 102400
 
 void doit(int clientfd);
+void *thread(void *vargp);
 void parse_uri(char *uri, char *hostname, char *port, char *path);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
 void read_requesthdrs(rio_t *request_rio, void *request_buf, int serverfd, char *hostname, char *port);
@@ -18,9 +19,10 @@ static const char *user_agent_hdr =
 
 int main(int argc, char **argv) {
   //printf("%s", user_agent_hdr);
-  int listenfd, connfd;
+  int listenfd, connfd, *clientfd;
   char hostname[MAXLINE], port[MAXLINE]; // MAXLINE = 8192
   socklen_t clientlen;
+  pthread_t tid;
   struct sockaddr_storage clientaddr;
 
     if (argc != 2)
@@ -43,18 +45,28 @@ int main(int argc, char **argv) {
     listenfd = open_listenfd(argv[1]);
     while (1) {
         clientlen = sizeof(clientaddr);
+        clientfd = Malloc(sizeof(int));
         connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
         Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
-        printf("enter doit\n");
-        doit(connfd);
-        Close(connfd);
+
+        //doit(connfd);
+        //Close(connfd);
+        Pthread_create(&tid, NULL, thread, clientfd);
         printf("==================closing connection==================\n");
     }
 
     return 0;
 }
 
+void *thread(void *vargp) {
+    int clientfd = *((int*)vargp);
+    Pthread_detach(pthread_self());
+    Free(vargp);
+    doit(clientfd);
+    Close(clientfd);
+    return NULL;
+}
 
 void doit(int clientfd) {
     signal(SIGPIPE, SIG_IGN);
