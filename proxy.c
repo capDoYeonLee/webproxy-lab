@@ -49,6 +49,7 @@ int main(int argc, char **argv) {
         printf("enter doit\n");
         doit(connfd);
         Close(connfd);
+        printf("==================closing connection==================\n");
     }
 
     return 0;
@@ -83,8 +84,10 @@ void doit(int clientfd) {
     printf("=====test bebug logging=====\n");
     printf("hostname: %s\n", hostname);
     printf("port: %s\n", port);
-    serverfd = Open_clientfd(hostname, port); // proxy -> server connect 시도
-    printf("serverfd is %d\n", serverfd);
+    // serverfd = Open_clientfd(hostname, port);
+    // proxy -> server connect 시도
+    serverfd = is_local_test ? Open_clientfd(hostname, port) : Open_clientfd("52.79.234.188", port); // 이 ip는 도대체 무엇인가?
+
     if (serverfd < 0) {
         clienterror(serverfd, method, "502", "Bad Gateway", "Failed to establish connection with the end server");
         return;
